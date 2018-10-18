@@ -30,16 +30,21 @@ function run() {
 
     TALISMAN_SETUP_DIR=${HOME}/.talisman/bin
     TEMPLATE_DIR=$(git config --global init.templatedir) || true
+    GITHUB_BASE="https://raw.githubusercontent.com/rrajagop/talisman/master/"
 
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'talisman_uninstall')
     trap "rm -r ${TEMP_DIR}" EXIT
     chmod 0700 ${TEMP_DIR}
 
-    function remove_git_talisman_hooks(){
-	SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null && pwd )" 
-	DELETE_REPO_HOOK_SCRIPT="${SCRIPT_DIR}/uninstall_git_repo_hook.bash"
+    DELETE_REPO_HOOK_SCRIPT=${TEMP_DIR}/uninstall_git_repo_hook.bash
+    function get_dependent_scripts() {
+	curl --silent "${GITHUB_BASE}/global_install_scripts/uninstall_git_repo_hook.bash" > ${DELETE_REPO_HOOK_SCRIPT}
+	chmod +x ${DELETE_REPO_HOOK_SCRIPT}
+    }
+    
+    function remove_git_talisman_hooks() {
 	if [[ ! -x ${DELETE_REPO_HOOK_SCRIPT} ]]; then
-	    echo_error "Couldn't find executable script ${DELETE_REPO_HOOK_SCRIPT}. Please download the script and try again"
+	    echo_error "Couldn't find executable script ${DELETE_REPO_HOOK_SCRIPT}"
 	    exit 1
 	fi
 	
@@ -76,6 +81,7 @@ function run() {
 	fi
     }
 
+    get_dependent_scripts
     remove_git_talisman_hooks
 
     echo_debug "Removing talisman hooks from .git-template"

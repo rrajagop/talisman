@@ -43,4 +43,4 @@ function run() {
     fi
 }
 
-run $0 $@
+run $@

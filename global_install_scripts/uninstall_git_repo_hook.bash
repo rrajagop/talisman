@@ -25,6 +25,11 @@ function run() {
     DOT_GIT_DIR=$3
     HOOK_SCRIPT=$4
 
+    echo_debug "TALISMAN_PATH: ${TALISMAN_PATH}"
+    echo_debug "EXCEPTIONS_FILE: ${EXCEPTIONS_FILE}"
+    echo_debug "DOT_GIT_DIR: ${DOT_GIT_DIR}"
+    echo_debug "HOOK_SCRIPT: ${HOOK_SCRIPT}"
+    
     REPO_HOOK_SCRIPT=${DOT_GIT_DIR}/hooks/${HOOK_SCRIPT}
     #check if a hook already exists
     if [ -e "${REPO_HOOK_SCRIPT}" ]; then
@@ -36,7 +41,7 @@ function run() {
 		# check if the .pre-commit-config contains "talisman", if so ask them to remove it manually 
 		echo_error "Pre-existing pre-commit.com hook detected in ${DOT_GIT_DIR}/hooks"
 	    fi
-	    echo ${DOT_GIT_DIR} | sed 's#/.git$##' >> EXCEPTIONS_FILE
+	    echo ${DOT_GIT_DIR} | sed 's#/.git$##' >> $EXCEPTIONS_FILE
 	fi
     else 
 	echo_debug "Didn't find pre-commit hook in ${DOT_GIT_DIR}/hooks, nothing to do"

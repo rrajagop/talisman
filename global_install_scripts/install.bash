@@ -188,11 +188,12 @@ function run() {
 	fi
 	EXCEPTIONS_FILE=${TEMP_DIR}/pre-existing-hooks.paths
 	touch ${EXCEPTIONS_FILE}
-	
+
+	TALISMAN_HOOK_SCRIPT_PATH=${TALISMAN_SETUP_DIR}/talisman_hook_script
+
 	CMD_STRING="${SUDO_PREFIX} ${SEARCH_CMD} ${SEARCH_ROOT} ${EXTRA_SEARCH_OPTS} -name .git -type d -exec ${REPO_HOOK_SETUP_SCRIPT_PATH} ${TALISMAN_HOOK_SCRIPT_PATH} ${EXCEPTIONS_FILE} {} \;"
 	echo_debug "EXECUTING: ${CMD_STRING}"
 	eval "${CMD_STRING}"
-	FULL_TALISMAN_SCRIPT_PATH=${TALISMAN_SETUP_DIR}/talisman_hook_script
 	
 	NUMBER_OF_EXCEPTION_REPOS=`cat ${EXCEPTIONS_FILE} | wc -l`
 	
@@ -210,7 +211,7 @@ function run() {
     hooks:
     -   id: talisman-precommit
         name: talisman
-        entry: ${FULL_TALISMAN_SCRIPT_PATH} pre-commit
+        entry: ${TALISMAN_HOOK_SCRIPT_PATH} pre-commit
         language: system
         pass_filenames: false
         types: [text]

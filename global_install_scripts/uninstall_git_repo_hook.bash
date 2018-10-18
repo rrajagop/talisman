@@ -25,27 +25,25 @@ function run() {
     DOT_GIT_DIR=$3
     HOOK_SCRIPT=$4
 
-    echo_debug "TALISMAN_PATH: ${TALISMAN_PATH}"
-    echo_debug "EXCEPTIONS_FILE: ${EXCEPTIONS_FILE}"
-    echo_debug "DOT_GIT_DIR: ${DOT_GIT_DIR}"
-    echo_debug "HOOK_SCRIPT: ${HOOK_SCRIPT}"
-    
     REPO_HOOK_SCRIPT=${DOT_GIT_DIR}/hooks/${HOOK_SCRIPT}
-    #check if a hook already exists
-    if [ -e "${REPO_HOOK_SCRIPT}" ]; then
-	#check if already hooked up to talisman
-	if [ "${REPO_HOOK_SCRIPT}" -ef "${TALISMAN_PATH}" ]; then
-	    rm ${REPO_HOOK_SCRIPT} && echo_success "Removed ${REPO_HOOK_SCRIPT}"
-	else
-	    if [ -e "${DOT_GIT_DIR}/../.pre-commit-config.yaml" ]; then
-		# check if the .pre-commit-config contains "talisman", if so ask them to remove it manually 
-		echo_error "Pre-existing pre-commit.com hook detected in ${DOT_GIT_DIR}/hooks"
-	    fi
-	    echo ${DOT_GIT_DIR} | sed 's#/.git$##' >> $EXCEPTIONS_FILE
-	fi
-    else 
-	echo_debug "Didn't find pre-commit hook in ${DOT_GIT_DIR}/hooks, nothing to do"
+    echo_debug "Processing hook: ${REPO_HOOK_SCRIPT}"
+
+    if [[ ! -e "${REPO_HOOK_SCRIPT}" ]]; then
+	echo_debug "No ${REPO_HOOK_SCRIPT}, nothing to do"
+	exit 0
     fi
+    
+    # remove script if it is symlinked to talisman
+    if [ "${REPO_HOOK_SCRIPT}" -ef "${TALISMAN_PATH}" ]; then
+	rm ${REPO_HOOK_SCRIPT} && echo_success "Removed ${REPO_HOOK_SCRIPT}"
+	exit 0
+    fi
+    
+    if [ -e "${DOT_GIT_DIR}/../.pre-commit-config.yaml" ]; then
+	# check if the .pre-commit-config contains "talisman", if so ask them to remove it manually 
+	echo_error "Pre-existing pre-commit.com hook detected in ${DOT_GIT_DIR}/hooks"
+    fi
+    echo ${DOT_GIT_DIR} | sed 's#/.git$##' >> $EXCEPTIONS_FILE
 }
 
 run $@

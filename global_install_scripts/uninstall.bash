@@ -30,7 +30,7 @@ function run() {
 
     TALISMAN_SETUP_DIR=${HOME}/.talisman/bin
     TEMPLATE_DIR=$(git config --global init.templatedir) || true
-    GITHUB_BASE="https://raw.githubusercontent.com/rrajagop/talisman/master/"
+    GITHUB_BASE="https://raw.githubusercontent.com/rrajagop/talisman/master"
 
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'talisman_uninstall')
     trap "rm -r ${TEMP_DIR}" EXIT

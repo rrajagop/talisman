@@ -115,13 +115,15 @@ function run() {
 	verify_checksum ${TALISMAN_BINARY_NAME}
     }
 
-    GITHUB_BASE="https://raw.githubusercontent.com/rrajagop/talisman/master/"
+    GITHUB_BASE="https://raw.githubusercontent.com/rrajagop/talisman/master"
     REPO_HOOK_SETUP_SCRIPT_PATH="${TEMP_DIR}/setup_talisman_hook_in_repo.bash"
     
     function get_dependent_scripts() {
+	echo_debug "Downloading dependent scripts"
 	curl --silent "${GITHUB_BASE}/global_install_scripts/talisman_hook_script" > ${TEMP_DIR}/talisman_hook_script.bash
 	curl --silent "${GITHUB_BASE}/global_install_scripts/setup_talisman_hook_in_repo.bash" > ${REPO_HOOK_SETUP_SCRIPT_PATH}
 	chmod +x ${REPO_HOOK_SETUP_SCRIPT_PATH}
+	echo_debug "Contents of temp_dir: `ls ${TEMP_DIR}`" 
     }
 
     function setup_talisman(){
@@ -187,7 +189,7 @@ function run() {
 	EXCEPTIONS_FILE=${TEMP_DIR}/pre-existing-hooks.paths
 	touch ${EXCEPTIONS_FILE}
 	
-	CMD_STRING="${SUDO_PREFIX} ${SEARCH_CMD} ${SEARCH_ROOT} ${EXTRA_SEARCH_OPTS} -name .git -type d -exec ${REPO_HOOK_SETUP_SCRIPT_PATH} {} \;"
+	CMD_STRING="${SUDO_PREFIX} ${SEARCH_CMD} ${SEARCH_ROOT} ${EXTRA_SEARCH_OPTS} -name .git -type d -exec ${REPO_HOOK_SETUP_SCRIPT_PATH} ${TALISMAN_HOOK_SCRIPT_PATH} ${EXCEPTIONS_FILE} {} \;"
 	echo_debug "EXECUTING: ${CMD_STRING}"
 	eval "${CMD_STRING}"
 	FULL_TALISMAN_SCRIPT_PATH=${TALISMAN_SETUP_DIR}/talisman_hook_script
@@ -218,6 +220,7 @@ END_OF_SCRIPT
     }
 
 	set_talisman_binary_name
+	get_dependent_scripts
 
 	# currently doesn't check if the talisman binary and the talisman hook script are upto date
 	# would be good to create a separate script which does the upgrade and the initial install 
@@ -225,7 +228,6 @@ END_OF_SCRIPT
 	    echo "Downloading talisman binary"
 	    collect_version_artifact_download_urls
 	    download_talisman_binary
-	    get_dependent_scripts
 	    echo
 	    echo "Setting up talisman binary and helper script in $HOME/.talisman"
 	    setup_talisman

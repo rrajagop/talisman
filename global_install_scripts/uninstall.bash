@@ -4,8 +4,22 @@ shopt -s extglob
 
 DEBUG=${DEBUG:-''}
 
-declare HOOK_SCRIPT='pre-commit'
+declare HOOK_SCRIPT='pre-commit' # TODO: need ability to uninstall pre-push hook as well. 
 function run() {
+    # Arguments: $1 = 'pre-commit' or 'pre-push'. whether to set talisman up as pre-commit or pre-push hook : TODO: not implemented yet
+    # Environment variables:
+    #    DEBUG="any-non-emply-value": verbose output for debugging the script
+    #    INSTALL_ORG_REPO="..."     : the github org/repo to install from (default thoughtworks/talisman)
+    #
+    # Download the script needed for uninstalling the repo level hooks
+    # For each git repo found in the search root (default $HOME)
+    #     Run the repo level uninstall hook. This will remove the symlink from .git/hooks/pre-<commit/push> to the central $TALISMAN_SETUP_DIR
+    #     The script will only remove talisman hook, not a pre-commit.com script or some other non-talisman hook
+    #     Write exceptions to a file for manual action
+    #     Look in the uninstall_git_repo_hook.bash script for more details on what it does
+    # Remove the talisman_hook_script in .git-template/hooks/pre-<commit/push>  
+    # Remove talisman binary and talisman_hook_script from $TALISMAN_SETUP_DIR ($HOME/.talisman/bin)
+    
     function echo_error() {
 	echo -ne $(tput setaf 1) >&2
 	echo "$1" >&2

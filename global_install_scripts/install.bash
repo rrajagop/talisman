@@ -207,6 +207,7 @@ function run() {
 	#     This will not clobber any pre-existing hooks, instead suggesting a hook chaining tool like pre-commit (pre-commit.com)
 	#     The REPO_HOOK_SETUP_SCRIPT takes care of pre-commit vs pre-push & not clobbering any hooks which are already setup
 	#         If the REPO_HOOK_SETUP_SCRIPT finds a pre-existing hook, it will write these to the EXCEPTIONS_FILE
+	#         Look into the REPO_HOOK_SETUP_SCRIPT for more detailed info on that script
 	
 	SEARCH_ROOT="$1"
 	SEARCH_CMD="find"
@@ -235,8 +236,7 @@ function run() {
 	    echo_error "Please see ${EXCEPTIONS_FILE_HOME_PATH} for a list of repositories"
 	    echo_error "that couldn't automatically be hooked up with talisman as ${HOOK_SCRIPT}"
 	    echo_error "You should consider installing a tool like pre-commit (https://pre-commit.com) in those repositories"
-	    echo_error "Add the following repo definition into .pre-commit-config.yaml"
-	    echo_error "after installing pre-commit in each such repository"
+	    echo_error "Add the following repo definition into .pre-commit-config.yaml after installing pre-commit in each such repository"
 	    tee $HOME/.talisman-precommit-config <<END_OF_SCRIPT
 -   repo: local
     hooks:

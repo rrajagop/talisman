@@ -29,7 +29,7 @@ function run() {
     echo_debug "Processing hook: ${REPO_HOOK_SCRIPT}"
 
     if [[ ! -e "${REPO_HOOK_SCRIPT}" ]]; then
-	echo_debug "No ${REPO_HOOK_SCRIPT}, nothing to do"
+	echo_success "No ${REPO_HOOK_SCRIPT}, nothing to do"
 	exit 0
     fi
     

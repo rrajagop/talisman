@@ -5,13 +5,29 @@ shopt -s extglob
 DEBUG=${DEBUG:-''}
 FORCE_DOWNLOAD=${FORCE_DOWNLOAD:-''}
 
-# default is a pre-commit hook 
+# default is a pre-commit hook; if "pre-push" is the first arg to the script, then it sets up as pre-push
 declare HOOK_SCRIPT='pre-commit'  
-if [[ $# -gt 0 && $1 =~ pre-push.* ]] ; then    # pre-commit or pre-push has to be the first & only argument to the script
+if [[ $# -gt 0 && $1 =~ pre-push.* ]] ; then
    HOOK_SCRIPT='pre-push'
 fi
 
 function run() {
+    # Arguments: $1 = 'pre-commit' or 'pre-push'. whether to set talisman up as pre-commit or pre-push hook
+    # Environment variables:
+    #    DEBUG="any-non-emply-value": verbose output for debugging the script
+    #    FORCE_DOWNLOAD="non-empty" : download talisman binary & hook script even if already installed. useful as an upgrade option.
+    #    VERSION="version-number"   : download a specific version of talisman
+    #    INSTALL_ORG_REPO="..."     : the github org/repo to install from (default thoughtworks/talisman)
+
+    # Download appropriate (appropriate = based on OS and ARCH) talisman binary from github
+    # Get other related install scripts from github
+    # Copy the talisman binary and the talisman_hook_script to $TALISMAN_SETUP_DIR ($HOME/.talisman/bin)
+    # Setup a hook script at <git-template-dir>/hooks/pre-<commit/push>.
+    #    When a new repo is created via either git clone or init, this hook script is copied across.
+    #    This is symlinked to the talisman_hook_script in $TALISMAN_SETUP_DIR, for ease of upgrade.
+    # For each git repo found in the search root (default $HOME), setup a hook script at .git/hooks/pre-<commit/push>
+    #    This is symlinked to the talisman_hook_script in $TALISMAN_SETUP_DIR, for ease of upgrade.
+    
     declare TALISMAN_BINARY_NAME
     
     E_CHECKSUM_MISMATCH=2
@@ -21,13 +37,17 @@ function run() {
     VERSION=${VERSION:-'latest'}
     INSTALL_ORG_REPO=${INSTALL_ORG_REPO:-'thoughtworks/talisman'}
     
-    DEFAULT_GLOBAL_TEMPLATE_DIR="$HOME/.git-template"
-    TALISMAN_SETUP_DIR=${HOME}/.talisman/bin
-    
+    DEFAULT_GLOBAL_TEMPLATE_DIR="$HOME/.git-template"  # create git-template dir here if not already setup 
+    TALISMAN_SETUP_DIR=${HOME}/.talisman/bin           # location of central install: talisman binary and hook script
+    TALISMAN_HOOK_SCRIPT_PATH=${TALISMAN_SETUP_DIR}/talisman_hook_script
+    SCRIPT_BASE="https://raw.githubusercontent.com/${INSTALL_ORG_REPO}/master/global_install_scripts"
+
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'talisman_setup')
     trap "rm -r ${TEMP_DIR}" EXIT
     chmod 0700 ${TEMP_DIR}
-    
+
+    REPO_HOOK_SETUP_SCRIPT_PATH="${TEMP_DIR}/setup_talisman_hook_in_repo.bash"   # script for setting up git hooks on one repo
+        
     function echo_error() {
 	echo -ne $(tput setaf 1) >&2
 	echo "$1" >&2
@@ -58,7 +78,8 @@ function run() {
 	cat ${TEMP_DIR}/download_urls
     }
     
-    function set_talisman_binary_name() {  # based on OS (linux/darwin) and ARCH(32/64 bit)
+    function set_talisman_binary_name() {
+	# based on OS (linux/darwin) and ARCH(32/64 bit)
 	declare ARCHITECTURE
 	OS=$(uname -s)
 	case $OS in
@@ -68,7 +89,7 @@ function run() {
 		ARCHITECTURE="darwin" ;;
 	    *)
 		echo_error "Talisman currently only supports Linux and MacOS(darwin) systems."
-		echo_error "If this is a problem for you, please open an issue: https://github.com/thoughtworks/talisman/issues/new"
+		echo_error "If this is a problem for you, please open an issue: https://github.com/${INSTALL_ORG_REPO}/issues/new"
 		exit $E_UNSUPPORTED_ARCH
 		;;
 	esac
@@ -81,7 +102,7 @@ function run() {
 		ARCHITECTURE="${ARCHITECTURE}_386" ;;
 	    *)
 		echo_error "Talisman currently only supports x86 and x86_64 architectures."
-		echo_error "If this is a problem for you, please open an issue: https://github.com/thoughtworks/talisman/issues/new"
+		echo_error "If this is a problem for you, please open an issue: https://github.com/${INSTALL_ORG_REPO}/issues/new"
 		exit $E_UNSUPPORTED_ARCH
 		;;
     	esac
@@ -115,27 +136,30 @@ function run() {
 	verify_checksum ${TALISMAN_BINARY_NAME}
     }
 
-    GITHUB_BASE="https://raw.githubusercontent.com/rrajagop/talisman/master"
-    REPO_HOOK_SETUP_SCRIPT_PATH="${TEMP_DIR}/setup_talisman_hook_in_repo.bash"
-    
     function get_dependent_scripts() {
 	echo_debug "Downloading dependent scripts"
-	curl --silent "${GITHUB_BASE}/global_install_scripts/talisman_hook_script" > ${TEMP_DIR}/talisman_hook_script.bash
-	curl --silent "${GITHUB_BASE}/global_install_scripts/setup_talisman_hook_in_repo.bash" > ${REPO_HOOK_SETUP_SCRIPT_PATH}
+	curl --silent "${SCRIPT_BASE}/talisman_hook_script.bash" > ${TEMP_DIR}/talisman_hook_script.bash
+	curl --silent "${SCRIPT_BASE}/setup_talisman_hook_in_repo.bash" > ${REPO_HOOK_SETUP_SCRIPT_PATH}
 	chmod +x ${REPO_HOOK_SETUP_SCRIPT_PATH}
 	echo_debug "Contents of temp_dir: `ls ${TEMP_DIR}`" 
     }
 
-    function setup_talisman(){
+    function setup_talisman() {
+	# setup talisman & hook script in a central location for ease of download ($TALISMAN_SETUP_DIR)
 	mkdir -p ${TALISMAN_SETUP_DIR}
 	cp ${TEMP_DIR}/${TALISMAN_BINARY_NAME} ${TALISMAN_SETUP_DIR}
 	chmod +x ${TALISMAN_SETUP_DIR}/${TALISMAN_BINARY_NAME}
 
-	cp ${TEMP_DIR}/talisman_hook_script.bash ${TALISMAN_SETUP_DIR}/talisman_hook_script
-	chmod +x ${TALISMAN_SETUP_DIR}/talisman_hook_script
+	cp ${TEMP_DIR}/talisman_hook_script.bash ${TALISMAN_HOOK_SCRIPT_PATH}
+	chmod +x ${TALISMAN_HOOK_SCRIPT_PATH}
     }
     
     function setup_git_template_talisman_hook() {
+	# check for existing git-template dir, if not create it in $HOME/.git-template
+	# if git-template dir already contains the pre-<commit/push> script that we want to use for talisman,
+	#    don't setup talisman, warn the user and suggest using a hook chaining mechanism like pre-commit (from pre-commit.com)
+	# Setup a symlink from <.git-template dir>/hooks/pre-<commit/push> to the central talisman hook script
+	
 	TEMPLATE_DIR=$(git config --global init.templatedir) || true # find the template_dir if it exists
 	
 	if [[ "$TEMPLATE_DIR" == "" ]]; then # if no template dir, create one
@@ -156,7 +180,7 @@ function run() {
 	
 	if [ -e "${TEMPLATE_DIR}/hooks/${HOOK_SCRIPT}" ]; then
 	    # does this handle the case of upgrade - already have the hook installed, but is the old version?
-	    if [ "${TALISMAN_SETUP_DIR}/talisman_hook_script" -ef "${TEMPLATE_DIR}/hooks/${HOOK_SCRIPT}" ]; then
+	    if [ "${TALISMAN_HOOK_SCRIPT_PATH}" -ef "${TEMPLATE_DIR}/hooks/${HOOK_SCRIPT}" ]; then
 		echo_success "Talisman template hook already installed." 
 	    else
 		echo_error "It looks like you already have a ${HOOK_SCRIPT} hook"
@@ -169,12 +193,20 @@ function run() {
 	else
 	    mkdir -p "$TEMPLATE_DIR/hooks"
 	    echo "Setting up template ${HOOK_SCRIPT} hook"
-	    ln -svf ${TALISMAN_SETUP_DIR}/talisman_hook_script ${TEMPLATE_DIR}/hooks/${HOOK_SCRIPT}
+	    ln -svf ${TALISMAN_HOOK_SCRIPT_PATH} ${TEMPLATE_DIR}/hooks/${HOOK_SCRIPT}
 	    echo_success "Talisman template hook successfully installed."
 	fi
     }
 
-    function setup_git_talisman_hooks_at(){
+    function setup_git_talisman_hooks_at() {
+	# find all .git repos from a specified $SEARCH_ROOT and setup .git/hooks/pre-<commit/push> in each of those
+	#     Symlink .git/hooks/pre-<commit/push> to the central talisman hook script
+	#     use find -name .git -exec REPO_HOOK_SETUP_SCRIPT to find all git repos and setup the hook
+	#     If the $SEARCH_ROOT is root, then use sudo and ask for the user's password to execute
+	#     This will not clobber any pre-existing hooks, instead suggesting a hook chaining tool like pre-commit (pre-commit.com)
+	#     The REPO_HOOK_SETUP_SCRIPT takes care of pre-commit vs pre-push & not clobbering any hooks which are already setup
+	#         If the REPO_HOOK_SETUP_SCRIPT finds a pre-existing hook, it will write these to the EXCEPTIONS_FILE
+	
 	SEARCH_ROOT="$1"
 	SEARCH_CMD="find"
 	EXTRA_SEARCH_OPTS=""
@@ -188,8 +220,6 @@ function run() {
 	fi
 	EXCEPTIONS_FILE=${TEMP_DIR}/pre-existing-hooks.paths
 	touch ${EXCEPTIONS_FILE}
-
-	TALISMAN_HOOK_SCRIPT_PATH=${TALISMAN_SETUP_DIR}/talisman_hook_script
 
 	CMD_STRING="${SUDO_PREFIX} ${SEARCH_CMD} ${SEARCH_ROOT} ${EXTRA_SEARCH_OPTS} -name .git -type d -exec ${REPO_HOOK_SETUP_SCRIPT_PATH} ${TALISMAN_HOOK_SCRIPT_PATH} ${EXCEPTIONS_FILE} {} \;"
 	echo_debug "EXECUTING: ${CMD_STRING}"
@@ -225,7 +255,7 @@ END_OF_SCRIPT
 
 	# currently doesn't check if the talisman binary and the talisman hook script are upto date
 	# would be good to create a separate script which does the upgrade and the initial install 
-	if [[ ! -x ${TALISMAN_SETUP_DIR}/${TALISMAN_BINARY_NAME} || ! -x ${TALISMAN_SETUP_DIR}/talisman_hook_script || -n ${FORCE_DOWNLOAD} ]]; then
+	if [[ ! -x ${TALISMAN_SETUP_DIR}/${TALISMAN_BINARY_NAME} || ! -x ${TALISMAN_HOOK_SCRIPT_PATH} || -n ${FORCE_DOWNLOAD} ]]; then
 	    echo "Downloading talisman binary"
 	    collect_version_artifact_download_urls
 	    download_talisman_binary

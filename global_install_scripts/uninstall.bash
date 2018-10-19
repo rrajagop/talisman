@@ -30,7 +30,8 @@ function run() {
 
     TALISMAN_SETUP_DIR=${HOME}/.talisman/bin
     TEMPLATE_DIR=$(git config --global init.templatedir) || true
-    GITHUB_BASE="https://raw.githubusercontent.com/rrajagop/talisman/master"
+    INSTALL_ORG_REPO=${INSTALL_ORG_REPO:-'thoughtworks/talisman'}
+    SCRIPT_BASE="https://raw.githubusercontent.com/${INSTALL_ORG_REPO}/master/global_install_scripts"
 
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'talisman_uninstall')
     trap "rm -r ${TEMP_DIR}" EXIT
@@ -38,7 +39,7 @@ function run() {
 
     DELETE_REPO_HOOK_SCRIPT=${TEMP_DIR}/uninstall_git_repo_hook.bash
     function get_dependent_scripts() {
-	curl --silent "${GITHUB_BASE}/global_install_scripts/uninstall_git_repo_hook.bash" > ${DELETE_REPO_HOOK_SCRIPT}
+	curl --silent "${SCRIPT_BASE}/uninstall_git_repo_hook.bash" > ${DELETE_REPO_HOOK_SCRIPT}
 	chmod +x ${DELETE_REPO_HOOK_SCRIPT}
     }
     

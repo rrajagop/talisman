@@ -42,7 +42,7 @@ function run() {
 	mkdir -p ${DOT_GIT_DIR}/hooks || (echo_error "Could not create hooks directory" && return)
 	LN_FLAGS="-sf"
 	[ -n "true" ] && LN_FLAGS="${LN_FLAGS}v"
-	ln ${LN_FLAGS} ${TALISMAN_PATH} ${DOT_GIT_DIR}/hooks/pre-commit
+	ln ${LN_FLAGS} ${TALISMAN_HOOK_SCRIPT_PATH} ${DOT_GIT_DIR}/hooks/pre-commit
 	echo_success "DONE"
     fi
 }

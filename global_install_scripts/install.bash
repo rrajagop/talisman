@@ -36,11 +36,12 @@ function run() {
     IFS=$'\n'
     VERSION=${VERSION:-'latest'}
     INSTALL_ORG_REPO=${INSTALL_ORG_REPO:-'thoughtworks/talisman'}
-    
+    SCRIPT_ORG_REPO=${SCRIPT_ORG_REPO:-${INSTALL_ORG_REPO}}  # needed for testing
+
     DEFAULT_GLOBAL_TEMPLATE_DIR="$HOME/.git-template"  # create git-template dir here if not already setup 
     TALISMAN_SETUP_DIR=${HOME}/.talisman/bin           # location of central install: talisman binary and hook script
     TALISMAN_HOOK_SCRIPT_PATH=${TALISMAN_SETUP_DIR}/talisman_hook_script
-    SCRIPT_BASE="https://raw.githubusercontent.com/${INSTALL_ORG_REPO}/master/global_install_scripts"
+    SCRIPT_BASE="https://raw.githubusercontent.com/${SCRIPT_ORG_REPO}/master/global_install_scripts"
 
     TEMP_DIR=$(mktemp -d 2>/dev/null || mktemp -d -t 'talisman_setup')
     trap "rm -r ${TEMP_DIR}" EXIT
